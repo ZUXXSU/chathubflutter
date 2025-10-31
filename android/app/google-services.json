@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "860997172903",
+    "firebase_url": "https://t35t-32882-default-rtdb.firebaseio.com",
+    "project_id": "t35t-32882",
+    "storage_bucket": "t35t-32882.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:860997172903:android:1186e8c773b00bcc26e582",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVHAPSa_AhEeWCipES0S8gh2QNdE2lkHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
