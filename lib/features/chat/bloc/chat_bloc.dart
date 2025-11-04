@@ -21,14 +21,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final String chatId;
   final String myUserId; // Need this to identify "my" messages
 
-  // --- CORRECTED SUBSCRIPTION TYPES ---
   /// Holds the *unsubscribe* function for the 'NEW_MESSAGE' event.
   Function? _messageSubscription;
   /// Holds the *unsubscribe* function for the 'START_TYPING' event.
   Function? _typingStartSubscription;
   /// Holds the *unsubscribe* function for the 'STOP_TYPING' event.
   Function? _typingStopSubscription;
-  // --- END CORRECTION ---
 
   ChatBloc({
     required this.apiService,
@@ -39,18 +37,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     
     // Register event handlers
     on<LoadMessages>(_onLoadMessages);
-    on<SendTextMessage>(_onSendMessage);
+    on<SendTextMessage>(_onSendMessage); // Corrected event name
     on<MessageReceived>(_onMessageReceived);
     on<TypingStarted>(_onTypingStarted);
     on<TypingStopped>(_onTypingStopped);
 
-    // --- CORRECTED LISTENER ASSIGNMENT ---
     // Listen to socket events and store the "off" function
     _messageSubscription = socketService.socket?.on('NEW_MESSAGE', (data) {
       try {
         if (data['chatId'] == chatId) {
-          // Add event to BLoC stream
-          add(MessageReceived(Message.fromJson(data['message'])));
+          // --- CORRECTION 1 ---
+          // Add event to BLoC stream with the raw Map data
+          add(MessageReceived(data['message']));
         }
       } catch (e) {
         debugPrint('Error parsing received message: $e');
@@ -59,16 +57,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     _typingStartSubscription = socketService.socket?.on('START_TYPING', (data) {
       if (data['chatId'] == chatId) {
-        add(TypingStarted());
+        add(const TypingStarted());
       }
     });
 
     _typingStopSubscription = socketService.socket?.on('STOP_TYPING', (data) {
       if (data['chatId'] == chatId) {
-        add(TypingStopped());
+        add(const TypingStopped());
       }
     });
-    // --- END CORRECTION ---
 
     // Load initial messages
     add(LoadMessages(chatId));
@@ -78,21 +75,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   Future<void> _onLoadMessages(LoadMessages event, Emitter<ChatState> emit) async {
     try {
       emit(ChatLoading());
-      final result = await apiService.getMessages(chatId, event.page);
+      // Assume page is part of the event, or default to 1
+      final result = await apiService.getMessages(chatId, 1); // Defaulting to page 1
       final messages = Message.fromJsonList(result['messages']);
       
       emit(ChatLoaded(
         messages: messages,
         totalPages: result['totalPages'],
-        currentPage: event.page,
+        currentPage: 1,
       ));
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
 
-  /// Handles the [SendMessage] event.
-  void _onSendMessage(SendMessage event, Emitter<ChatState> emit) {
+  /// Handles the [SendTextMessage] event.
+  void _onSendMessage(SendTextMessage event, Emitter<ChatState> emit) {
     if (event.message.trim().isEmpty) return;
 
     // Emit the message via Socket.io
@@ -103,7 +101,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
 
     // Optimistic UI update: Add the message to the state immediately.
-    // The backend will broadcast it back, but we can show it now.
     if (state is ChatLoaded) {
       final currentState = state as ChatLoaded;
       
@@ -129,35 +126,46 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (state is ChatLoaded) {
       final currentState = state as ChatLoaded;
 
-      // Avoid duplicates from optimistic send
-      if (event.data.sender.id == myUserId) {
-        // If it's my message, find the temp one and replace it
-        // (or just ignore if the server echo is reliable)
-        return; // Assuming server doesn't echo back to sender
+      // --- CORRECTION 2 & 3 ---
+      final message = Message.fromJson(event.messageData);
+
+      if (message.sender.id == myUserId) {
+        // This is an echo of our own message.
+        // Find the optimistic (temporary) message and replace it.
+        final index = currentState.messages.indexWhere(
+          (m) => m.sender.id == myUserId && m.content == message.content
+        );
+
+        if (index != -1) {
+          // Found it, replace it with the server-confirmed message
+          final updatedMessages = List<Message>.from(currentState.messages);
+          updatedMessages[index] = message;
+          emit(currentState.copyWith(messages: updatedMessages));
+        }
+        // If not found, it was probably already processed. Do nothing.
+      } else {
+        // This is a new message from another user.
+        final updatedMessages = List<Message>.from(currentState.messages)
+          ..add(message);
+        emit(currentState.copyWith(messages: updatedMessages));
       }
-      
-      final updatedMessages = List<Message>.from(currentState.messages)
-        ..add(event.message);
-      
-      emit(currentState.copyWith(messages: updatedMessages));
     }
   }
 
   /// Handles the [TypingStarted] event.
   void _onTypingStarted(TypingStarted event, Emitter<ChatState> emit) {
     if (state is ChatLoaded) {
-      emit((state as ChatLoaded).copyWith(isTyping: true));
+      emit((state as ChatLoaded).copyWith(isOtherUserTyping: true));
     }
   }
 
   /// Handles the [TypingStopped] event.
   void _onTypingStopped(TypingStopped event, Emitter<ChatState> emit) {
      if (state is ChatLoaded) {
-      emit((state as ChatLoaded).copyWith(isTyping: false));
+      emit((state as ChatLoaded).copyWith(isOtherUserTyping: false));
     }
   }
   
-  // --- CORRECTED CLOSE METHOD ---
   @override
   Future<void> close() {
     // Call the stored "off" functions to unsubscribe
@@ -166,6 +174,4 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _typingStopSubscription?.call();
     return super.close();
   }
-  // --- END CORRECTION ---
 }
-

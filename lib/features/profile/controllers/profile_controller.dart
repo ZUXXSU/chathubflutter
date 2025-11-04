@@ -1,6 +1,7 @@
 import 'package:flutter_app/core/api/api_service.dart';
 import 'package:flutter_app/core/models/FriendRequestNotification.dart';
-import 'package:flutter_app/core/models/user.dart'; // <-- ADDED THIS IMPORT
+import 'package:flutter_app/core/models/user.dart';
+import 'package:flutter_app/core/services/auth_service.dart';
 import 'package:flutter_app/core/utils/helpers.dart';
 import 'package:flutter_app/features/profile/screens/notifications_screen.dart';
 import 'package:flutter_app/features/profile/screens/search_screen.dart';
@@ -12,7 +13,7 @@ import 'package:flutter/material.dart';
 /// This controller is responsible for:
 /// - Fetching the user's main profile ([UserProfile]).
 /// - Fetching the user's friend list ([PopulatedUser]).
-/// - Fetching the user's pending friend requests ([Notification]).
+/// - Fetching the user's pending friend requests ([FriendRequestNotification]).
 /// - Handling acceptance/rejection of friend requests.
 /// - Providing navigation to Search and Notifications screens.
 class ProfileController extends GetxController {
@@ -25,16 +26,18 @@ class ProfileController extends GetxController {
   var userProfile = Rx<UserProfile?>(null);
 
   /// Holds the list of the user's friends.
-  var friendList = Rx<List<PopulatedUser>>([]);
+  var friendsList = Rx<List<PopulatedUser>>([]); // Corrected typo
 
   /// Holds the list of pending friend requests.
-  var notificationList = Rx<List<Notification>>([]);
+  // --- CORRECTION ---
+  var notificationList = Rx<List<FriendRequestNotification>>([]);
+  // --- END CORRECTION ---
 
   /// General loading state for the whole screen.
   var isLoading = false.obs;
 
   /// Loading state specifically for the friend request list.
-  var isNotificationLoading = false.obs;
+  var isNotificationLoading = false.obs; // Corrected typo
 
   // --- Initialization ---
 
@@ -76,7 +79,7 @@ class ProfileController extends GetxController {
   Future<void> _fetchFriends() async {
     try {
       final data = await _apiService.getMyFriends();
-      friendList.value = (data as List)
+      friendsList.value = (data as List)
           .map((item) => PopulatedUser.fromJson(item))
           .toList();
     } catch (e) {
@@ -93,9 +96,11 @@ class ProfileController extends GetxController {
     try {
       isNotificationLoading(true); // Use specific loader
       final data = await _apiService.getMyNotifications();
+      // --- CORRECTION ---
       notificationList.value = (data as List)
-          .map((item) => Notification.fromJson(item))
+          .map((item) => FriendRequestNotification.fromJson(item))
           .toList();
+      // --- END CORRECTION ---
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -120,10 +125,10 @@ class ProfileController extends GetxController {
       );
 
       // Show success message
-      Helpers.showSuccessSnackbar('Success ${message}');
+      Helpers.showSuccessSnackbar(message); // Removed 'Success ' prefix
 
       // Optimistically remove the request from the list
-      notificationList.removeWhere((req) => req.id == requestId);
+      notificationList.value.removeWhere((req) => req.id == requestId);
 
       // If we accepted, refresh the friend list
       if (accept) {
@@ -152,12 +157,12 @@ class ProfileController extends GetxController {
 
   /// Navigates to the [NotificationsScreen].
   void goToNotifications() {
-    Get.to(() => NotificationsScreen());
+    Get.to(() => const NotificationsScreen());
   }
 
   /// Navigates to the [SearchScreen].
   void goToSearch() {
-    Get.to(() => SearchScreen());
+    Get.to(() => const SearchScreen());
   }
 
   /// Logs the user out.
@@ -168,4 +173,3 @@ class ProfileController extends GetxController {
     // The AuthWrapper in app.dart will handle navigation
   }
 }
-

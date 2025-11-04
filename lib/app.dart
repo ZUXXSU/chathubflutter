@@ -2,6 +2,7 @@ import 'package:flutter_app/core/config/theme.dart';
 import 'package:flutter_app/core/services/auth_service.dart';
 import 'package:flutter_app/features/auth/screens/login_screen.dart';
 import 'package:flutter_app/features/auth/screens/register_screen.dart';
+import 'package:flutter_app/features/chat/screens/chat_screen.dart'; // <-- IMPORT ADDED
 import 'package:flutter_app/features/home/screens/home_screen.dart';
 import 'package:flutter_app/global_bindings.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,7 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // Set up global dependencies for GetX
-      initialBinding: GlobalBindings(),
+      initialBinding: GlobalBindings(context),
 
       // The initial screen is the AuthWrapper, which decides
       // whether to show the LoginScreen or HomeScreen.
@@ -33,9 +34,9 @@ class App extends StatelessWidget {
       getPages: [
         GetPage(name: '/login', page: () => LoginScreen()),
         GetPage(name: '/register', page: () => RegisterScreen()),
-        GetPage(name: '/home', page: () => HomeScreen()),
+        GetPage(name: '/home', page: () => const HomeScreen()),
         // Add other main routes here
-        // e.g., GetPage(name: '/chat/:chatId', page: () => ChatScreen()),
+        GetPage(name: '/chat', page: () => const ChatScreen()), // <-- ROUTE ADDED
       ],
     );
   }
@@ -56,11 +57,10 @@ class AuthWrapper extends StatelessWidget {
     // The isAuthenticated getter in AuthService handles all the logic.
     if (authService.isAuthenticated) {
       // User is logged in
-      return HomeScreen();
+      return const HomeScreen();
     } else {
       // User is logged out
       return LoginScreen();
     }
   }
 }
-

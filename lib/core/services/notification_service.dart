@@ -1,5 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_app/core/api/api_service.dart';
+import 'package:get/get.dart';
 
 /// Handles background message notifications.
 /// This must be a top-level function (not inside a class).
@@ -81,7 +83,7 @@ class NotificationService {
       // For web, you must provide your VAPID key.
       String? token = await _fcm.getToken(
         vapidKey: kIsWeb
-            ? "AIzaSyBj3eR_62gp8kOMQmeDKe_7UsYIi2rVdNk"
+            ? "AIzaSyBj3eR_62gp8kOMQmeDKe_7UsYIi2rVdNk" // From firebase_options.dart
             : null,
       );
       
@@ -90,10 +92,13 @@ class NotificationService {
       // Listen for token refreshes and send the new token to your backend
       _fcm.onTokenRefresh.listen((newToken) {
         debugPrint("FCM Token Refreshed: $newToken");
-        // TODO: Send this `newToken` to your backend API
-        // For example:
-        // final apiService = Get.find<ApiService>();
-        // await apiService.updateFcmToken(newToken);
+        // Send this `newToken` to your backend API
+        try {
+          final apiService = Get.find<ApiService>();
+          apiService.updateFcmToken(newToken);
+        } catch (e) {
+          debugPrint('Error updating refreshed FCM token: $e');
+        }
       });
 
       return token;
@@ -107,7 +112,6 @@ class NotificationService {
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint("Notification Tapped!");
     debugPrint("Title: ${message.notification?.title}");
-    // debugServiceExtension('navigate', 'pushPage', {'page': 'chat'});
     // This is where you would navigate the user.
     // For example, if your notification data includes a `chatId`:
     //

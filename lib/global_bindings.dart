@@ -14,11 +14,15 @@ import 'package:provider/provider.dart';
 /// It also initializes controllers that need to be alive for the
 /// entire app session, like [ProfileController].
 class GlobalBindings extends Bindings {
+  var context;
+  GlobalBindings(context){
+    this.context = context;
+  }
   @override
   void dependencies() {
     // Use Get.context to access the Provider context
     // This context is available because GetMaterialApp is a child of MultiProvider
-    final context = Get.context!;
+    final context = Get.context ?? this.context;
 
     // --- Bridge Services from Provider to GetX ---
     // This makes the singletons from Provider available to all GetX controllers.

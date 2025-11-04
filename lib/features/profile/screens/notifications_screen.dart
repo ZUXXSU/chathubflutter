@@ -22,24 +22,33 @@ class NotificationsScreen extends StatelessWidget {
       ),
       body: Obx(
         () {
-          if (controller.isLoadingNotifications.value &&
-              controller.notificationsList.isEmpty) {
+          if (controller.isNotificationLoading.value &&
+              controller.notificationList.value.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(color: ChatHubTheme.primary),
             );
           }
 
-          if (controller.notificationsList.isEmpty) {
+          if (controller.notificationList.value.isEmpty) {
             return RefreshIndicator(
               color: ChatHubTheme.primary,
               backgroundColor: ChatHubTheme.surface,
-              onRefresh: () => controller.fetchMyNotifications(),
-              child: const Center(
-                child: Text(
-                  'You have no new notifications.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
+              // --- CORRECTION ---
+              onRefresh: () => controller.refreshNotifications(),
+              child: ListView( // Added ListView to make RefreshIndicator work on empty
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(48.0),
+                      child: Text(
+                        'You have no new notifications.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -47,12 +56,14 @@ class NotificationsScreen extends StatelessWidget {
           return RefreshIndicator(
             color: ChatHubTheme.primary,
             backgroundColor: ChatHubTheme.surface,
-            onRefresh: () => controller.fetchMyNotifications(),
+            // --- CORRECTION ---
+            onRefresh: () => controller.refreshNotifications(),
             child: ListView.builder(
-              itemCount: controller.notificationsList.length,
+              itemCount: controller.notificationList.value.length,
               itemBuilder: (context, index) {
-                final request = controller.notificationsList[index];
-                return NotificationListTile(request: request);
+                final request = controller.notificationList.value[index];
+                // --- CORRECTION (model name) ---
+                return NotificationListTile(notification: request);
               },
             ),
           );

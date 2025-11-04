@@ -7,10 +7,8 @@ import 'package:get/get.dart';
 /// A widget that displays a single friend request and provides
 /// "Accept" and "Reject" buttons.
 class NotificationListTile extends StatelessWidget {
-  /// --- CORRECTED ---
-  /// The type is now the correct `FriendRequestNotification`
+  /// The type is the correct `FriendRequestNotification`
   final FriendRequestNotification notification;
-  // --- END CORRECTION ---
 
   const NotificationListTile({
     super.key,
@@ -45,20 +43,24 @@ class NotificationListTile extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, color: ChatHubTheme.error),
             onPressed: () {
-              controller.respondToRequest(
-                requestId: notification.id,
-                accept: false,
-              );
+              // --- CORRECTION ---
+              // controller.handleFriendRequest(
+              //   requestId: notification.id,
+              //   accept: false,
+              // );
+              controller.handleFriendRequest(notification.id, false);
             },
           ),
           // Accept Button
           IconButton(
             icon: const Icon(Icons.check, color: Colors.green),
             onPressed: () {
-              controller.respondToRequest(
-                requestId: notification.id,
-                accept: true,
-              );
+              // --- CORRECTION ---
+              // controller.handleFriendRequest(
+              //   requestId: notification.id,
+              //   accept: true,
+              // );
+              controller.handleFriendRequest(notification.id, false);
             },
           ),
         ],
@@ -66,4 +68,3 @@ class NotificationListTile extends StatelessWidget {
     );
   }
 }
-

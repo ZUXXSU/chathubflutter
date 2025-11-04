@@ -4,6 +4,10 @@ import 'package:flutter_app/core/services/auth_service.dart';
 import 'package:flutter_app/core/services/notification_service.dart';
 import 'package:flutter_app/features/home/screens/chat_list_tab.dart';
 import 'package:flutter_app/features/home/screens/groups_list_tab.dart';
+import 'package:flutter_app/features/profile/controllers/profile_controller.dart';
+import 'package:flutter_app/features/profile/screens/notifications_screen.dart';
+import 'package:flutter_app/features/profile/screens/profile_screen.dart';
+import 'package:flutter_app/features/profile/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -18,11 +22,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  // --- CORRECTION 1 ---
   final List<Widget> _tabs = [
     const ChatListTab(),
     const GroupsListTab(),
-    const ProfilePlaceholderTab(), // Placeholder for profile
+    const ProfileScreen(), // Use the real profile screen
   ];
+  // --- END CORRECTION ---
 
   @override
   void initState() {
@@ -46,9 +52,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Connect to socket
       socketService.connect(token, fcmToken);
 
-      // TODO: You might want to update the FCM token on the server
-      // using ApiService here as well, if it has changed.
-      // context.read<ApiService>().updateFcmToken(fcmToken);
+      // NOTE: FCM token is updated on the server via LoginController
+      // and NotificationService's onTokenRefresh. No need to do it here.
     }
   }
 
@@ -58,27 +63,90 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // --- CORRECTION 4 & 5 ---
+  /// Actions for the Chat and Groups tabs
+  List<Widget> _buildChatActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.search),
+        onPressed: () {
+          Get.to(() => const SearchScreen());
+        },
+      ),
+      IconButton(
+        icon: const Icon(Icons.add),
+        onPressed: () {
+          // TODO: Navigate to create new chat/group screen
+        },
+      ),
+    ];
+  }
+
+  /// Actions for the Profile tab
+  List<Widget> _buildProfileActions(BuildContext context) {
+    // Find controllers/services needed for actions
+    final ProfileController controller = Get.find<ProfileController>();
+    final AuthService authService = context.read<AuthService>();
+
+    return [
+      // Notifications Button
+      IconButton(
+        icon: Obx(() {
+          // --- CORRECTION 6 (typo fix) ---
+          final count = controller.notificationList.value.length;
+          return Badge(
+            label: Text(count.toString()),
+            isLabelVisible: count > 0,
+            child: const Icon(Icons.notifications_outlined),
+          );
+        }),
+        onPressed: () {
+          Get.to(() => const NotificationsScreen());
+        },
+      ),
+      // Search Button
+      IconButton(
+        icon: const Icon(Icons.search),
+        onPressed: () {
+          Get.to(() => const SearchScreen());
+        },
+      ),
+      // Logout Button
+      IconButton(
+        icon: const Icon(Icons.logout, color: Colors.redAccent),
+        onPressed: () {
+          Get.defaultDialog(
+            title: 'Logout',
+            titleStyle: const TextStyle(color: ChatHubTheme.textOnSurface),
+            middleText: 'Are you sure you want to log out?',
+            middleTextStyle: const TextStyle(color: ChatHubTheme.textOnSurface),
+            backgroundColor: ChatHubTheme.surface,
+            buttonColor: ChatHubTheme.primary,
+            textConfirm: 'Logout',
+            textCancel: 'Cancel',
+            confirmTextColor: ChatHubTheme.textOnPrimary,
+            cancelTextColor: ChatHubTheme.textOnSurface,
+            onConfirm: () {
+              authService.logout();
+              Get.back(); // Close dialog
+            },
+          );
+        },
+      ),
+    ];
+  }
+  // --- END CORRECTION ---
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? 'Chats' : _selectedIndex == 1 ? 'Groups' : 'Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Navigate to Search Screen
-              // Get.toNamed('/search');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // TODO: Navigate to Notifications Screen
-              // Get.toNamed('/notifications');
-            },
-          ),
-        ],
+        // --- CORRECTION 4 ---
+        actions: _selectedIndex == 2
+            ? _buildProfileActions(context)
+            : _buildChatActions(context),
+        // --- END CORRECTION ---
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -102,58 +170,13 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
-      floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
-          ? FloatingActionButton(
-              onPressed: () {
-                // TODO: Navigate to create new chat/group screen
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
+      // --- CORRECTION 3 ---
+      // Removed FloatingActionButton as it's now in the AppBar
+      // --- END CORRECTION ---
     );
   }
 }
 
-/// A placeholder widget for the Profile tab.
-class ProfilePlaceholderTab extends StatelessWidget {
-  const ProfilePlaceholderTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>();
-    final socketService = context.watch<SocketService>();
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Profile Tab',
-            style: TextStyle(fontSize: 24, color: Colors.white),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Navigate to the full profile screen
-              // Get.toNamed('/profile');
-            },
-            child: const Text('View Full Profile'),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              // Disconnect socket and log out
-              socketService.disconnect();
-              authService.logout();
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// --- CORRECTION 2 ---
+// Removed the ProfilePlaceholderTab class as it's no longer used
+// --- END CORRECTION ---

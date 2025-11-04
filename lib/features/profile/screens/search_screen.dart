@@ -26,12 +26,13 @@ class SearchScreen extends StatelessWidget {
           children: [
             // Search Input Field
             AuthTextField(
-              controller: null, // Controller is handled by onChanged
-              hintText: 'Search by name...',
+              controller: TextEditingController(), // Controller is handled by onChanged
+              // hintText: 'Search by name...',
               icon: Icons.search,
-              onChanged: (query) {
-                controller.searchUser(query);
-              },
+              // onChanged: (query) {
+              //   controller.searchUser(query);
+              // }, 
+              labelText: 'Search',
             ),
             const SizedBox(height: 20),
             

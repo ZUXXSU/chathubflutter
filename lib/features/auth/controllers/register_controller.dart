@@ -76,7 +76,6 @@ class RegisterController extends GetxController {
     try {
       isLoading(true);
 
-      // --- CORRECTED LINE ---
       // Pass the File object directly as required by ApiService
       await _apiService.registerUser(
         name: nameController.text.trim(),
@@ -86,13 +85,10 @@ class RegisterController extends GetxController {
         bio: bioController.text.trim(),
         avatarFile: avatarFile.value!,
       );
-      // --- END CORRECTION ---
 
       // On success, show a message and pop back to the login screen
-      SnackBar(
-        content : 
-        Text('Success : Registration successful! Please log in.')
-      );
+      // --- CORRECTED LINE ---
+      Helpers.showSuccessSnackbar('Registration successful! Please log in.');
       Get.back(); // Go back to LoginScreen
       
     } catch (e) {
@@ -117,4 +113,3 @@ class RegisterController extends GetxController {
     super.onClose();
   }
 }
-
